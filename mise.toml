@@ -6,5 +6,5 @@ pnpm = "12.8.1"
 [env]
 NODE_USE_ENV_PROXY = "1"
 NO_PROXY = "localhost,127.0.0.1"
-HTTP_PROXY="http://127.0.0.1:7897"
-HTTPS_PROXY="http://127.0.0.1:7897"
+HTTP_PROXY="http://127.0.0.1:7890"
+HTTPS_PROXY="http://127.0.0.1:7890"

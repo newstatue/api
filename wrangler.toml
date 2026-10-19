@@ -11,3 +11,9 @@ service = "auth"
 
 [vars]
 TRUSTED_ORIGINS="http://localhost:5173,https://evorsio.app,https://www.evorsio.app,https://admin.evorsio.app"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "api-db"
+database_id = "9aa58930-a0b8-4d46-ae5e-c14d63cd7111"
+migrations_dir = "drizzle"

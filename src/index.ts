@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import { cors } from "hono/cors"
 import {getTrustedOrigins} from "./config";
+import {postsRoute} from "./modules/posts/post.route";
 
 type Bindings = {
   AUTH: Fetcher
@@ -22,5 +23,7 @@ app.use("/api/*",cors({
 app.all("/api/auth/*", (c) => {
   return c.env.AUTH.fetch(c.req.raw)
 })
+
+app.route("/api/posts", postsRoute)
 
 export default app
