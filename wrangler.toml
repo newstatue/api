@@ -1,0 +1,13 @@
+compatibility_date = "2026-10-01"
+main = "src/index.ts"
+name = "api"
+upload_source_maps = true
+workers_dev = false
+preview_urls = false
+
+[[services]]
+binding = "AUTH"
+service = "auth"
+
+[vars]
+TRUSTED_ORIGINS="http://localhost:5173,https://evorsio.app,https://www.evorsio.app,https://admin.evorsio.app"
