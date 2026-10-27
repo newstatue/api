@@ -1,0 +1,1 @@
+CREATE TABLE "users" ("id" uuid NOT NULL DEFAULT uuidv7(), "name" VARCHAR NOT NULL, "email" VARCHAR NOT NULL, "email_verified" BOOLEAN NOT NULL DEFAULT false, "password" VARCHAR, "image" VARCHAR, "created_at" TIMESTAMPTZ NOT NULL DEFAULT current_timestamp, "updated_at" TIMESTAMPTZ NOT NULL DEFAULT current_timestamp, PRIMARY KEY ("id"), UNIQUE ("email"));
