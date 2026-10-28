@@ -1,3 +1,4 @@
+
 name: 部署后端
 
 on:
@@ -33,6 +34,7 @@ jobs:
           GOARCH: amd64
         run: |
           go build -trimpath -ldflags="-s -w" -o api .
+          ls -lh api
 
       - name: 配置 SSH
         env:
@@ -47,11 +49,13 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
       - name: 上传二进制
+        timeout-minutes: 25
         env:
           HOST: ${{ secrets.DEPLOY_HOST }}
           USER: ${{ secrets.DEPLOY_USER }}
         run: |
-          scp -o StrictHostKeyChecking=yes \
+          rsync -avzP \
+            -e "ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=yes" \
             api "$USER@$HOST:/srv/evorsio/api/api.new"
 
       - name: 部署并重启
@@ -59,5 +63,7 @@ jobs:
           HOST: ${{ secrets.DEPLOY_HOST }}
           USER: ${{ secrets.DEPLOY_USER }}
         run: |
-          ssh -o StrictHostKeyChecking=yes "$USER@$HOST" \
+          ssh -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$USER@$HOST" \
             "sudo -n /usr/local/sbin/deploy-evorsio-api"
