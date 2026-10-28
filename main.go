@@ -50,8 +50,12 @@ func main() {
 
 	sessionManager := &session.Manager{Valkey: valkey}
 
+	authenticated := huma.NewGroup(api)
+	authenticated.UseMiddleware(sessionManager.Middleware(api, true))
+
 	authHandler := auth.Handler{DB: postgres, Session: sessionManager}
-	authHandler.RegisterRoutes(api)
+	huma.Post(api, "/auth/register", authHandler.RegisterUser)
+	huma.Post(api, "/auth/login", authHandler.LoginUser)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	server := &http.Server{

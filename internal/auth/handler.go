@@ -114,7 +114,7 @@ func (h *Handler) LoginUser(ctx context.Context, i *LoginUserInput) (*LoginUserO
 	}
 
 	// 3. 验证成功，创建session
-	sessionID, err := h.Session.GetOrCreate(ctx, i.SessionID, session.Session{
+	sessionID, err := h.Session.Create(ctx, session.Session{
 		UserID:    user.ID.String(),
 		UserAgent: i.UserAgent,
 	})
@@ -143,9 +143,4 @@ func (h *Handler) LoginUser(ctx context.Context, i *LoginUserInput) (*LoginUserO
 			Image:         user.Image,
 		},
 	}, nil
-}
-
-func (h *Handler) RegisterRoutes(api huma.API) {
-	huma.Post(api, "/auth/register", h.RegisterUser)
-	huma.Post(api, "/auth/login", h.LoginUser)
 }

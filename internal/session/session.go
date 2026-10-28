@@ -19,6 +19,8 @@ type Manager struct {
 	Valkey *redis.Client
 }
 
+var ErrNotFound = errors.New("会话不存在或已过期")
+
 type Session struct {
 	UserID    string    `json:"user_id"`
 	UserAgent string    `json:"user_agent"`
@@ -50,13 +52,21 @@ func (m *Manager) Create(ctx context.Context, data Session) (sessionID string, e
 	return
 }
 
-func (m *Manager) Get(ctx context.Context, sessionID string) (data Session, err error) {
-	value, err := m.Valkey.Get(ctx, sessionKey(sessionID)).Bytes()
-	if err != nil {
-		return data, err
+// Get 读取 Session，并续期
+func (m *Manager) Get(ctx context.Context, sessionID string) (session *Session, err error) {
+	if !validID(sessionID) {
+		return nil, ErrNotFound
 	}
 
-	err = json.Unmarshal(value, &data)
+	value, err := m.Valkey.GetEx(ctx, sessionKey(sessionID), TTL).Bytes()
+	if errors.Is(err, redis.Nil) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(value, &session)
 	return
 }
 
@@ -64,31 +74,13 @@ func (m *Manager) Delete(ctx context.Context, sessionID string) error {
 	return m.Valkey.Del(ctx, sessionKey(sessionID)).Err()
 }
 
-func (m *Manager) Refresh(ctx context.Context, sessionID string) (refreshed bool, err error) {
-	return m.Valkey.Expire(ctx, sessionKey(sessionID), TTL).Result()
-}
-
-func (m *Manager) GetOrCreate(ctx context.Context, sessionID string, data Session) (string, error) {
-	if sessionID != "" {
-		oldSession, err := m.Get(ctx, sessionID)
-
-		if err != nil && !errors.Is(err, redis.Nil) {
-			return "", err
-		}
-
-		if err == nil && oldSession.UserID == data.UserID {
-			refreshed, err := m.Refresh(ctx, sessionID)
-			if err != nil {
-				return "", err
-			}
-
-			if refreshed {
-				return sessionID, nil
-			}
-		}
+func validID(id string) bool {
+	if len(id) != base64.RawURLEncoding.EncodedLen(32) {
+		return false
 	}
 
-	return m.Create(ctx, data)
+	token, err := base64.RawURLEncoding.DecodeString(id)
+	return err == nil && len(token) == 32 && base64.RawURLEncoding.EncodeToString(token) == id
 }
 
 func sessionKey(sessionID string) string {
