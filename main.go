@@ -51,7 +51,12 @@ func main() {
 	slog.Info("Valkey连接成功")
 
 	mux := http.NewServeMux()
-	api := humago.New(mux, huma.DefaultConfig("示例API", "0.0.1"))
+
+	humaConfig := huma.DefaultConfig("Evorsio API", "1.0.0")
+	humaConfig.DocsPath = "/api/docs"
+	humaConfig.OpenAPIPath = "/api/openapi.json"
+	humaConfig.SchemasPath = "/api/schemas"
+	api := humago.New(mux, humaConfig)
 
 	sessionManager := &session.Manager{
 		Valkey: valkey,
@@ -63,8 +68,8 @@ func main() {
 	authenticated.UseMiddleware(sessionManager.Middleware(api, cfg.SessionSecure))
 
 	authHandler := auth.Handler{DB: postgres, Session: sessionManager}
-	huma.Post(api, "/auth/register", authHandler.RegisterUser)
-	huma.Post(api, "/auth/login", authHandler.LoginUser)
+	huma.Post(api, "/api/auth/register", authHandler.RegisterUser)
+	huma.Post(api, "/api/auth/login", authHandler.LoginUser)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	server := &http.Server{
