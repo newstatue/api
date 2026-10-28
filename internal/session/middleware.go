@@ -44,21 +44,25 @@ func (m *Manager) Middleware(api huma.API, secure bool) func(huma.Context, func(
 		}
 
 		// Get 已续期 Redis，这里同步续期浏览器 Cookie。
-		appendCookie(ctx, cookie.Value, int(TTL.Seconds()), secure)
+		appendCookie(ctx, cookie.Value, int(m.TTL.Seconds()), secure)
 
 		next(huma.WithValue(ctx, contextKey{}, session))
 	}
 }
 
-func appendCookie(ctx huma.Context, id string, maxAge int, secure bool) {
-	cookie := http.Cookie{
+func appendCookie(ctx huma.Context, sessionID string, maxAge int, secure bool) {
+	cookie := NewCookie(sessionID, maxAge, secure)
+	ctx.AppendHeader("Set-Cookie", cookie.String())
+}
+
+func NewCookie(sessionID string, maxAge int, secure bool) *http.Cookie {
+	return &http.Cookie{
 		Name:     CookieName,
-		Value:    id,
+		Value:    sessionID,
 		Path:     "/",
 		MaxAge:   maxAge,
 		HttpOnly: true,
 		Secure:   secure,
 		SameSite: http.SameSiteLaxMode,
 	}
-	ctx.AppendHeader("Set-Cookie", cookie.String())
 }

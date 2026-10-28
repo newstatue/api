@@ -13,10 +13,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const TTL = 7 * 24 * time.Hour
-
 type Manager struct {
 	Valkey *redis.Client
+	Secure bool
+	TTL    time.Duration
 }
 
 var ErrNotFound = errors.New("会话不存在或已过期")
@@ -44,7 +44,7 @@ func (m *Manager) Create(ctx context.Context, data Session) (sessionID string, e
 		return "", err
 	}
 
-	err = m.Valkey.Set(ctx, sessionKey(sessionID), value, TTL).Err()
+	err = m.Valkey.Set(ctx, sessionKey(sessionID), value, m.TTL).Err()
 	if err != nil {
 		return "", err
 	}
@@ -58,7 +58,7 @@ func (m *Manager) Get(ctx context.Context, sessionID string) (session *Session, 
 		return nil, ErrNotFound
 	}
 
-	value, err := m.Valkey.GetEx(ctx, sessionKey(sessionID), TTL).Bytes()
+	value, err := m.Valkey.GetEx(ctx, sessionKey(sessionID), m.TTL).Bytes()
 	if errors.Is(err, redis.Nil) {
 		return nil, ErrNotFound
 	}

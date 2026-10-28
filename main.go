@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -19,39 +20,47 @@ import (
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal("加载配置失败", err)
+		slog.Error("加载配置失败", "error", err)
+		os.Exit(1)
 	}
-	log.Print("加载配置成功")
+	slog.Info("加载配置成功")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	postgres, err := database.NewPostgres(ctx, cfg.PostgresURL)
 	if err != nil {
-		log.Fatal("Postgres连接失败", err)
+		slog.Error("Postgres连接失败", "error", err)
+		os.Exit(1)
 	}
 	defer postgres.Close()
-	log.Print("Postgres连接成功")
+	slog.Info("Postgres连接成功")
 
 	if err := database.Migrate(ctx, postgres); err != nil {
-		log.Fatal("Postgres迁移失败", err)
+		slog.Error("Postgres迁移失败", "error", err)
+		os.Exit(1)
 	}
-	log.Print("Postgres迁移成功")
+	slog.Info("Postgres迁移成功")
 
 	valkey, err := database.NewValkey(ctx, cfg.ValkeyURL)
 	if err != nil {
-		log.Fatal("Valkey连接失败", err)
+		slog.Error("Valkey连接失败", "error", err)
+		os.Exit(1)
 	}
 	defer valkey.Close()
-	log.Print("Valkey连接成功")
+	slog.Info("Valkey连接成功")
 
 	mux := http.NewServeMux()
 	api := humago.New(mux, huma.DefaultConfig("示例API", "0.0.1"))
 
-	sessionManager := &session.Manager{Valkey: valkey}
+	sessionManager := &session.Manager{
+		Valkey: valkey,
+		Secure: cfg.SessionSecure,
+		TTL:    cfg.SessionTTL,
+	}
 
 	authenticated := huma.NewGroup(api)
-	authenticated.UseMiddleware(sessionManager.Middleware(api, true))
+	authenticated.UseMiddleware(sessionManager.Middleware(api, cfg.SessionSecure))
 
 	authHandler := auth.Handler{DB: postgres, Session: sessionManager}
 	huma.Post(api, "/auth/register", authHandler.RegisterUser)
@@ -62,8 +71,9 @@ func main() {
 		Addr:    addr,
 		Handler: mux,
 	}
-	log.Printf("服务器运行于: %s", addr)
+	slog.Info("服务器运行中", "addr", server.Addr)
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatal(err)
+		slog.Error("服务器运行失败", "error", err)
+		os.Exit(1)
 	}
 }

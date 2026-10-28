@@ -1,2 +1,14 @@
 [tools]
 go = "1.27.3"
+
+[tasks.dev]
+description = "启动 API 开发服务"
+run = "go run ."
+
+[tasks.dev.env]
+ENV = "dev"
+POSTGRES_URL = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+VALKEY_URL = "redis://localhost:6379/0"
+PORT = "8080"
+SESSION_SECURE = "false"
+SESSION_TTL = "168h"

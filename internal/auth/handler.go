@@ -4,8 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log"
-	"net/http"
+	"log/slog"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/newstatue/api/internal/entities"
@@ -32,7 +31,7 @@ func (h *Handler) RegisterUser(ctx context.Context, i *RegisterUserInput) (*Regi
 	email := util.NormalizeEmail(i.Body.Email)
 	exists, err := h.DB.NewSelect().Model((*entities.User)(nil)).Where("email = ?", email).Exists(ctx)
 	if err != nil {
-		log.Println(err)
+		slog.ErrorContext(ctx, "检查邮箱失败", "error", err)
 		return nil, huma.Error500InternalServerError("数据库查询失败")
 	}
 	if exists {
@@ -42,7 +41,7 @@ func (h *Handler) RegisterUser(ctx context.Context, i *RegisterUserInput) (*Regi
 	// 2. 使用 Argon2id 哈希密码
 	password, err := util.HashPassword(i.Body.Password)
 	if err != nil {
-		log.Println(err)
+		slog.ErrorContext(ctx, "哈希密码失败", "error", err)
 		return nil, huma.Error500InternalServerError("哈希密码失败")
 	}
 
@@ -56,7 +55,7 @@ func (h *Handler) RegisterUser(ctx context.Context, i *RegisterUserInput) (*Regi
 
 	_, err = h.DB.NewInsert().Model(user).Returning("id").Exec(ctx)
 	if err != nil {
-		log.Println(err)
+		slog.ErrorContext(ctx, "创建用户失败", "error", err)
 		return nil, huma.Error500InternalServerError("创建用户失败")
 	}
 
@@ -93,7 +92,7 @@ func (h *Handler) LoginUser(ctx context.Context, i *LoginUserInput) (*LoginUserO
 		return nil, huma.Error401Unauthorized("邮箱或密码错误")
 	}
 	if err != nil {
-		log.Println(err)
+		slog.ErrorContext(ctx, "查询登录用户失败", "error", err)
 		return nil, huma.Error500InternalServerError("数据库查询失败")
 	}
 
@@ -106,7 +105,7 @@ func (h *Handler) LoginUser(ctx context.Context, i *LoginUserInput) (*LoginUserO
 		*user.Password,
 	)
 	if err != nil {
-		log.Println(err)
+		slog.ErrorContext(ctx, "验证密码失败", "error", err)
 		return nil, huma.Error500InternalServerError("密码验证失败")
 	}
 	if !valid {
@@ -122,15 +121,7 @@ func (h *Handler) LoginUser(ctx context.Context, i *LoginUserInput) (*LoginUserO
 		return nil, huma.Error500InternalServerError("处理会话失败")
 	}
 
-	cookie := &http.Cookie{
-		Name:     "session",
-		Value:    sessionID,
-		Path:     "/",
-		MaxAge:   int(session.TTL.Seconds()),
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	}
+	cookie := session.NewCookie(sessionID, int(h.Session.TTL.Seconds()), h.Session.Secure)
 
 	// 4. 返回用户
 	return &LoginUserOutput{
