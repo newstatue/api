@@ -54,7 +54,7 @@ func main() {
 
 	humaConfig := huma.DefaultConfig("Evorsio API", "1.0.0")
 	humaConfig.DocsPath = "/api/docs"
-	humaConfig.OpenAPIPath = "/api/openapi.json"
+	humaConfig.OpenAPIPath = "/api/openapi"
 	humaConfig.SchemasPath = "/api/schemas"
 	api := humago.New(mux, humaConfig)
 
