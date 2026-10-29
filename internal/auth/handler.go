@@ -72,7 +72,6 @@ func (h *Handler) RegisterUser(ctx context.Context, i *RegisterUserInput) (*Regi
 }
 
 type LoginUserInput struct {
-	SessionID string `cookie:"session"`
 	UserAgent string `header:"User-Agent"`
 	Body      LoginUser
 }
@@ -127,6 +126,42 @@ func (h *Handler) LoginUser(ctx context.Context, i *LoginUserInput) (*LoginUserO
 	return &LoginUserOutput{
 		SetCookie: cookie.String(),
 		Body: User{
+			ID:            user.ID,
+			Name:          user.Name,
+			Email:         user.Email,
+			EmailVerified: user.EmailVerified,
+			Image:         user.Image,
+		},
+	}, nil
+}
+
+type GetCurrentUserOutput struct {
+	Body *User
+}
+
+func (h *Handler) GetCurrentUser(ctx context.Context, _ *struct{}) (*GetCurrentUserOutput, error) {
+	// 1. 从上下文获取当前 Session
+	s, ok := session.FromContext(ctx)
+	if !ok {
+		return nil, huma.Error401Unauthorized("未登录")
+	}
+
+	// 2. 查询当前用户
+	user := new(entities.User)
+
+	err := h.DB.NewSelect().Model(user).Where("id = ?", s.UserID).Scan(ctx)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, huma.Error401Unauthorized("用户不存在")
+	}
+	if err != nil {
+		slog.ErrorContext(ctx, "查询当前用户失败", "error", err)
+		return nil, huma.Error500InternalServerError("数据库查询失败")
+	}
+
+	// 3. 返回用户信息
+	return &GetCurrentUserOutput{
+		Body: &User{
 			ID:            user.ID,
 			Name:          user.Name,
 			Email:         user.Email,

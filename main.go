@@ -67,9 +67,13 @@ func main() {
 	authenticated := huma.NewGroup(api)
 	authenticated.UseMiddleware(sessionManager.Middleware(api, cfg.SessionSecure))
 
+	// 不需要认证的接口
 	authHandler := auth.Handler{DB: postgres, Session: sessionManager}
 	huma.Post(api, "/api/auth/register", authHandler.RegisterUser)
 	huma.Post(api, "/api/auth/login", authHandler.LoginUser)
+
+	// 需要认证的接口
+	huma.Get(authenticated, "/api/auth/me", authHandler.GetCurrentUser)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	server := &http.Server{
