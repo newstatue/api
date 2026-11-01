@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+	"uuid"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -22,7 +23,7 @@ type Manager struct {
 var ErrNotFound = errors.New("会话不存在或已过期")
 
 type Session struct {
-	UserID    string    `json:"user_id"`
+	UserID    uuid.UUID `json:"user_id"`
 	UserAgent string    `json:"user_agent"`
 	CreatedAt time.Time `json:"created_at"`
 }

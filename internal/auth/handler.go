@@ -113,7 +113,7 @@ func (h *Handler) LoginUser(ctx context.Context, i *LoginUserInput) (*LoginUserO
 
 	// 3. 验证成功，创建session
 	sessionID, err := h.Session.Create(ctx, session.Session{
-		UserID:    user.ID.String(),
+		UserID:    user.ID,
 		UserAgent: i.UserAgent,
 	})
 	if err != nil {

@@ -12,6 +12,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
 	"github.com/newstatue/api/internal/auth"
+	"github.com/newstatue/api/internal/community"
 	"github.com/newstatue/api/internal/config"
 	"github.com/newstatue/api/internal/database"
 	"github.com/newstatue/api/internal/session"
@@ -67,13 +68,21 @@ func main() {
 	authenticated := huma.NewGroup(api)
 	authenticated.UseMiddleware(sessionManager.Middleware(api, cfg.SessionSecure))
 
-	// 不需要认证的接口
+	// Handlers
 	authHandler := auth.Handler{DB: postgres, Session: sessionManager}
+	communityHandler := community.Handler{DB: postgres, Session: sessionManager}
+
+	// 公开接口
 	huma.Post(api, "/api/auth/register", authHandler.RegisterUser)
 	huma.Post(api, "/api/auth/login", authHandler.LoginUser)
+	huma.Get(api, "/api/communities", communityHandler.ListCommunities)
+	huma.Get(api, "/api/communities/{slug}", communityHandler.GetCommunity)
 
 	// 需要认证的接口
 	huma.Get(authenticated, "/api/auth/me", authHandler.GetCurrentUser)
+	huma.Post(authenticated, "/api/communities", communityHandler.CreateCommunity)
+	huma.Post(authenticated, "/api/communities/{slug}/members/me", communityHandler.JoinCommunity)
+	huma.Delete(authenticated, "/api/communities/{slug}/members/me", communityHandler.LeaveCommunity)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	server := &http.Server{

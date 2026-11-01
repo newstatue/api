@@ -12,6 +12,8 @@ func Migrate(ctx context.Context, db *bun.DB) error {
 	migrator, err := migrate.NewAutoMigrator(
 		db,
 		migrate.WithModel((*entities.User)(nil)),
+		migrate.WithModel((*entities.Community)(nil)),
+		migrate.WithModel((*entities.CommunityMember)(nil)),
 		migrate.WithMigrationsDirectoryAuto("migrations"),
 	)
 	if err != nil {

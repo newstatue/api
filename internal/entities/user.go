@@ -7,6 +7,13 @@ import (
 	"github.com/uptrace/bun"
 )
 
+type UserRole string
+
+const (
+	UserRoleAdmin UserRole = "admin"
+	UserRoleUser  UserRole = "user"
+)
+
 type User struct {
 	bun.BaseModel `bun:"table:users,alias:u"`
 
@@ -14,6 +21,7 @@ type User struct {
 	Name          string    `bun:"name,notnull"`
 	Email         string    `bun:"email,notnull,unique"`
 	EmailVerified bool      `bun:"email_verified,notnull,default:false"`
+	Role          UserRole  `bun:"role,notnull,default:'user'"`
 	Password      *string   `bun:"password"`
 	Image         *string   `bun:"image"`
 	CreatedAt     time.Time `bun:"created_at,notnull,default:current_timestamp"`
