@@ -60,7 +60,7 @@ func (h *Handler) CreateCommunity(ctx context.Context, i *CreateCommunityInput) 
 	// 4. 事务创建社区和 Owner 成员关系
 	err = h.DB.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		// 检查 Owner 是否存在
-		exists, err := tx.NewSelect().Model((*entities.User)(nil)).Where("id = ?", c.OwnerID).Exists(ctx)
+		exists, err := tx.NewSelect().Model((*entities.User)(nil)).Where("u.id = ?", c.OwnerID).Exists(ctx)
 		if err != nil {
 			return err
 		}
@@ -149,7 +149,7 @@ type GetCommunityInput struct {
 }
 
 type GetCommunityOutput struct {
-	Body *Community
+	Body Community
 }
 
 func (h *Handler) GetCommunity(ctx context.Context, i *GetCommunityInput) (*GetCommunityOutput, error) {
@@ -168,7 +168,7 @@ func (h *Handler) GetCommunity(ctx context.Context, i *GetCommunityInput) (*GetC
 	}
 
 	return &GetCommunityOutput{
-		Body: &Community{
+		Body: Community{
 			ID:          c.ID,
 			Slug:        c.Slug,
 			Name:        c.Name,
@@ -271,8 +271,8 @@ func (h *Handler) LeaveCommunity(ctx context.Context, i *LeaveCommunityInput) (*
 	// 删除成员关系
 	_, err = h.DB.NewDelete().
 		Model((*entities.CommunityMember)(nil)).
-		Where("community_id = ?", c.ID).
-		Where("user_id = ?", s.UserID).
+		Where("cm.community_id = ?", c.ID).
+		Where("cm.user_id = ?", s.UserID).
 		Exec(ctx)
 
 	if err != nil {
@@ -282,6 +282,170 @@ func (h *Handler) LeaveCommunity(ctx context.Context, i *LeaveCommunityInput) (*
 	return &LeaveCommunityOutput{
 		Body: JoinCommunity{
 			Joined: false,
+		},
+	}, nil
+}
+
+type CreateCommunityPostInput struct {
+	Slug string `path:"slug"`
+	Body CreateCommunityPost
+}
+
+type CreateCommunityPostOutput struct {
+	Body Post
+}
+
+func (h *Handler) CreateCommunityPost(ctx context.Context, i *CreateCommunityPostInput) (*CreateCommunityPostOutput, error) {
+	s, ok := session.FromContext(ctx)
+	if !ok {
+		return nil, huma.Error401Unauthorized("未认证")
+	}
+
+	// 查询社区
+	var community entities.Community
+	err := h.DB.NewSelect().Model(&community).Where("c.slug = ?", i.Slug).Scan(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, huma.Error404NotFound("社区不存在")
+		}
+		return nil, err
+	}
+
+	// 检查成员资格
+	exists, err := h.DB.NewSelect().
+		Model((*entities.CommunityMember)(nil)).
+		Where("cm.community_id = ?", community.ID).
+		Where("cm.user_id = ?", s.UserID).
+		Exists(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if !exists && community.OwnerID != s.UserID {
+		return nil, huma.Error403Forbidden("请先加入社区")
+	}
+
+	// 创建帖子
+	post := &entities.CommunityPost{
+		CommunityID: community.ID,
+		AuthorID:    s.UserID,
+		Title:       i.Body.Title,
+		Content:     i.Body.Content,
+	}
+
+	_, err = h.DB.NewInsert().Model(post).Returning("*").Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CreateCommunityPostOutput{
+		Body: Post{
+			ID:          post.ID,
+			CommunityID: post.CommunityID,
+			AuthorID:    post.AuthorID,
+			Title:       post.Title,
+			Content:     post.Content,
+			CreatedAt:   post.CreatedAt,
+			UpdatedAt:   post.UpdatedAt,
+		},
+	}, nil
+}
+
+type ListCommunityPostsInput struct {
+	Slug string `path:"slug"`
+	pagination.Params
+}
+
+type ListCommunityPostsOutput struct {
+	Body pagination.Result[Post]
+}
+
+func (h *Handler) ListCommunityPosts(ctx context.Context, i *ListCommunityPostsInput) (*ListCommunityPostsOutput, error) {
+	// 查询社区
+	var community entities.Community
+	err := h.DB.NewSelect().
+		Model(&community).
+		Where("c.slug = ?", i.Slug).
+		Scan(ctx)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, huma.Error404NotFound("社区不存在")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// 分页查询帖子
+	query := h.DB.NewSelect().
+		Model((*entities.CommunityPost)(nil)).
+		Where("cp.community_id = ?", community.ID).
+		OrderExpr("cp.created_at DESC, cp.id DESC")
+
+	result, err := pagination.Query[entities.CommunityPost](ctx, query, i.Params)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("查询帖子列表失败")
+	}
+
+	// 转换 DTO
+	items := make([]Post, 0, len(result.Items))
+
+	for _, post := range result.Items {
+		items = append(items, Post{
+			ID:          post.ID,
+			CommunityID: post.CommunityID,
+			AuthorID:    post.AuthorID,
+			Title:       post.Title,
+			Content:     post.Content,
+			CreatedAt:   post.CreatedAt,
+			UpdatedAt:   post.UpdatedAt,
+		})
+	}
+
+	return &ListCommunityPostsOutput{
+		Body: pagination.Result[Post]{
+			Items: items,
+			Total: result.Total,
+			Page:  result.Page,
+			Limit: result.Limit,
+		},
+	}, nil
+}
+
+type GetCommunityPostInput struct {
+	Slug   string `path:"slug"`
+	PostID string `path:"postId" format:"uuid"`
+}
+
+type GetCommunityPostOutput struct {
+	Body Post
+}
+
+func (h *Handler) GetCommunityPost(ctx context.Context, i *GetCommunityPostInput) (*GetCommunityPostOutput, error) {
+	var post entities.CommunityPost
+
+	err := h.DB.NewSelect().
+		Model(&post).
+		Join("JOIN communities AS c ON c.id = cp.community_id").
+		Where("cp.id = ?", i.PostID).
+		Where("c.slug = ?", i.Slug).
+		Scan(ctx)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, huma.Error404NotFound("帖子不存在")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &GetCommunityPostOutput{
+		Body: Post{
+			ID:          post.ID,
+			CommunityID: post.CommunityID,
+			AuthorID:    post.AuthorID,
+			Title:       post.Title,
+			Content:     post.Content,
+			CreatedAt:   post.CreatedAt,
+			UpdatedAt:   post.UpdatedAt,
 		},
 	}, nil
 }

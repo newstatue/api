@@ -2,8 +2,8 @@ package entities
 
 import (
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 )
 

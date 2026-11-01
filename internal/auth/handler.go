@@ -29,7 +29,7 @@ type RegisterUserOutput struct {
 func (h *Handler) RegisterUser(ctx context.Context, i *RegisterUserInput) (*RegisterUserOutput, error) {
 	// 1. 检查邮箱是否存在
 	email := util.NormalizeEmail(i.Body.Email)
-	exists, err := h.DB.NewSelect().Model((*entities.User)(nil)).Where("email = ?", email).Exists(ctx)
+	exists, err := h.DB.NewSelect().Model((*entities.User)(nil)).Where("u.email = ?", email).Exists(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "检查邮箱失败", "error", err)
 		return nil, huma.Error500InternalServerError("数据库查询失败")
@@ -86,7 +86,7 @@ func (h *Handler) LoginUser(ctx context.Context, i *LoginUserInput) (*LoginUserO
 
 	// 1. 查询用户
 	user := new(entities.User)
-	err := h.DB.NewSelect().Model(user).Where("email = ?", email).Scan(ctx)
+	err := h.DB.NewSelect().Model(user).Where("u.email = ?", email).Scan(ctx)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, huma.Error401Unauthorized("邮箱或密码错误")
 	}
@@ -136,7 +136,7 @@ func (h *Handler) LoginUser(ctx context.Context, i *LoginUserInput) (*LoginUserO
 }
 
 type GetCurrentUserOutput struct {
-	Body *User
+	Body User
 }
 
 func (h *Handler) GetCurrentUser(ctx context.Context, _ *struct{}) (*GetCurrentUserOutput, error) {
@@ -149,7 +149,7 @@ func (h *Handler) GetCurrentUser(ctx context.Context, _ *struct{}) (*GetCurrentU
 	// 2. 查询当前用户
 	user := new(entities.User)
 
-	err := h.DB.NewSelect().Model(user).Where("id = ?", s.UserID).Scan(ctx)
+	err := h.DB.NewSelect().Model(user).Where("u.id = ?", s.UserID).Scan(ctx)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, huma.Error401Unauthorized("用户不存在")
@@ -161,7 +161,7 @@ func (h *Handler) GetCurrentUser(ctx context.Context, _ *struct{}) (*GetCurrentU
 
 	// 3. 返回用户信息
 	return &GetCurrentUserOutput{
-		Body: &User{
+		Body: User{
 			ID:            user.ID,
 			Name:          user.Name,
 			Email:         user.Email,

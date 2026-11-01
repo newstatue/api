@@ -30,3 +30,23 @@ type UpdateCommunity struct {
 type JoinCommunity struct {
 	Joined bool `json:"joined"`
 }
+
+type Post struct {
+	ID          uuid.UUID `json:"id"`
+	CommunityID uuid.UUID `json:"communityId"`
+	AuthorID    uuid.UUID `json:"authorId"`
+	Title       string    `json:"title"`
+	Content     string    `json:"content"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+type CreateCommunityPost struct {
+	Title   string `json:"title" minLength:"1" maxLength:"200"`
+	Content string `json:"content" minLength:"1" maxLength:"50000"`
+}
+
+type UpdateCommunityPost struct {
+	Title   *string `json:"title,omitempty" minLength:"1" maxLength:"200"`
+	Content *string `json:"content,omitempty" minLength:"1"`
+}

@@ -75,14 +75,21 @@ func main() {
 	// 公开接口
 	huma.Post(api, "/api/auth/register", authHandler.RegisterUser)
 	huma.Post(api, "/api/auth/login", authHandler.LoginUser)
+
 	huma.Get(api, "/api/communities", communityHandler.ListCommunities)
 	huma.Get(api, "/api/communities/{slug}", communityHandler.GetCommunity)
+	huma.Get(api, "/api/communities/{slug}/posts", communityHandler.ListCommunityPosts)
+	huma.Get(api, "/api/communities/{slug}/posts/{postId}", communityHandler.GetCommunityPost)
 
 	// 需要认证的接口
 	huma.Get(authenticated, "/api/auth/me", authHandler.GetCurrentUser)
+
 	huma.Post(authenticated, "/api/communities", communityHandler.CreateCommunity)
+
 	huma.Post(authenticated, "/api/communities/{slug}/members/me", communityHandler.JoinCommunity)
 	huma.Delete(authenticated, "/api/communities/{slug}/members/me", communityHandler.LeaveCommunity)
+
+	huma.Post(authenticated, "/api/communities/{slug}/posts", communityHandler.CreateCommunityPost)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	server := &http.Server{
