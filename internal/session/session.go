@@ -67,7 +67,14 @@ func (m *Manager) Get(ctx context.Context, sessionID string) (session *Session, 
 		return nil, err
 	}
 
-	err = json.Unmarshal(value, &session)
+	if err = json.Unmarshal(value, &session); err != nil {
+		return nil, err
+	}
+
+	if session == nil {
+		return nil, ErrNotFound
+	}
+
 	return
 }
 

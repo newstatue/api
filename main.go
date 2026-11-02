@@ -66,7 +66,10 @@ func main() {
 	}
 
 	authenticated := huma.NewGroup(api)
-	authenticated.UseMiddleware(sessionManager.Middleware(api, cfg.SessionSecure))
+	authenticated.UseMiddleware(sessionManager.Middleware(api, cfg.SessionSecure, true))
+
+	optional := huma.NewGroup(api)
+	optional.UseMiddleware(sessionManager.Middleware(api, cfg.SessionSecure, false))
 
 	// Handlers
 	authHandler := auth.Handler{DB: postgres, Session: sessionManager}
@@ -77,11 +80,13 @@ func main() {
 	huma.Post(api, "/api/auth/login", authHandler.LoginUser)
 
 	huma.Get(api, "/api/communities", communityHandler.ListCommunities)
-	huma.Get(api, "/api/communities/{slug}", communityHandler.GetCommunity)
 	huma.Get(api, "/api/communities/{slug}/posts", communityHandler.ListCommunityPosts)
 	huma.Get(api, "/api/communities/{slug}/posts/{postId}", communityHandler.GetCommunityPost)
 
-	// 需要认证的接口
+	// 可选认证接口
+	huma.Get(optional, "/api/communities/{slug}", communityHandler.GetCommunity)
+
+	// 必须认证的接口
 	huma.Get(authenticated, "/api/auth/me", authHandler.GetCurrentUser)
 
 	huma.Post(authenticated, "/api/communities", communityHandler.CreateCommunity)

@@ -167,16 +167,35 @@ func (h *Handler) GetCommunity(ctx context.Context, i *GetCommunityInput) (*GetC
 		return nil, err
 	}
 
+	r := Community{
+		ID:          c.ID,
+		Slug:        c.Slug,
+		Name:        c.Name,
+		Description: c.Description,
+		OwnerID:     c.OwnerID,
+		CreatedAt:   c.CreatedAt,
+		UpdatedAt:   c.UpdatedAt,
+	}
+
+	if sess, ok := session.FromContext(ctx); ok {
+		var member entities.CommunityMember
+
+		err := h.DB.NewSelect().
+			Model(&member).
+			Where("cm.community_id = ?", c.ID).
+			Where("cm.user_id = ?", sess.UserID).
+			Scan(ctx)
+
+		if err == nil {
+			r.IsMember = true
+			r.MemberRole = string(member.Role)
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			return nil, huma.Error500InternalServerError("查询社区成员状态失败")
+		}
+	}
+
 	return &GetCommunityOutput{
-		Body: Community{
-			ID:          c.ID,
-			Slug:        c.Slug,
-			Name:        c.Name,
-			Description: c.Description,
-			OwnerID:     c.OwnerID,
-			CreatedAt:   c.CreatedAt,
-			UpdatedAt:   c.UpdatedAt,
-		},
+		Body: r,
 	}, nil
 }
 

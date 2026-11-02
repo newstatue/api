@@ -13,6 +13,9 @@ type Community struct {
 	OwnerID     uuid.UUID `json:"ownerId"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+
+	IsMember   bool   `json:"isMember"`
+	MemberRole string `json:"memberRole"`
 }
 
 type CreateCommunity struct {

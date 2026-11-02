@@ -18,22 +18,32 @@ func FromContext(ctx context.Context) (*Session, bool) {
 	return session, ok && session != nil
 }
 
-// Middleware 要求登录
-func (m *Manager) Middleware(api huma.API, secure bool) func(huma.Context, func(huma.Context)) {
+// Middleware 解析并注入 Session, required 为 true 时要求登录，为 false 时允许匿名访问。
+func (m *Manager) Middleware(api huma.API, secure bool, required bool) func(huma.Context, func(huma.Context)) {
 	return func(ctx huma.Context, next func(huma.Context)) {
 		cookie, err := huma.ReadCookie(ctx, CookieName)
 		if err != nil || cookie.Value == "" {
-			_ = huma.WriteErr(api, ctx, http.StatusUnauthorized, "请先登录")
+			if required {
+				_ = huma.WriteErr(api, ctx, http.StatusUnauthorized, "请先登录")
+				return
+			}
+			next(ctx)
 			return
 		}
 
 		session, err := m.Get(ctx.Context(), cookie.Value)
 		if errors.Is(err, ErrNotFound) {
 			appendCookie(ctx, "", -1, secure)
-			_ = huma.WriteErr(api, ctx, http.StatusUnauthorized, "会话已过期，请重新登录")
+			if required {
+				_ = huma.WriteErr(api, ctx, http.StatusUnauthorized, "会话已过期，请重新登录")
+				return
+			}
+			next(ctx)
 			return
 		}
-		if err != nil || session == nil {
+
+		// Session 服务异常
+		if err != nil {
 			slog.ErrorContext(ctx.Context(), "读取会话失败", "error", err)
 			_ = huma.WriteErr(
 				api, ctx,
