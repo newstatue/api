@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"uuid"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/newstatue/api/internal/pagination"
@@ -18,15 +19,15 @@ type Handler struct {
 	Session *session.Manager
 }
 
-type CreateCommunityInput struct {
-	Body CreateCommunity
+type CreateInput struct {
+	Body Create
 }
 
-type CreateCommunityOutput struct {
+type CreateOutput struct {
 	Body Community
 }
 
-func (h *Handler) CreateCommunity(ctx context.Context, i *CreateCommunityInput) (*CreateCommunityOutput, error) {
+func (h *Handler) Create(ctx context.Context, i *CreateInput) (*CreateOutput, error) {
 	// 1. 获取当前会话
 	s, ok := session.FromContext(ctx)
 	if !ok {
@@ -97,20 +98,20 @@ func (h *Handler) CreateCommunity(ctx context.Context, i *CreateCommunityInput) 
 		UpdatedAt:   c.UpdatedAt,
 	}
 
-	return &CreateCommunityOutput{
+	return &CreateOutput{
 		Body: community,
 	}, nil
 }
 
-type ListCommunityInput struct {
+type ListInput struct {
 	pagination.Params
 }
 
-type ListCommunityOutput struct {
+type ListOutput struct {
 	Body pagination.Result[Community]
 }
 
-func (h *Handler) ListCommunities(ctx context.Context, i *ListCommunityInput) (*ListCommunityOutput, error) {
+func (h *Handler) List(ctx context.Context, i *ListInput) (*ListOutput, error) {
 	query := h.DB.NewSelect().
 		Model((*entities.Community)(nil)).
 		OrderExpr("c.created_at DESC, c.id DESC")
@@ -134,7 +135,7 @@ func (h *Handler) ListCommunities(ctx context.Context, i *ListCommunityInput) (*
 		})
 	}
 
-	return &ListCommunityOutput{
+	return &ListOutput{
 		Body: pagination.Result[Community]{
 			Items: items,
 			Total: result.Total,
@@ -144,15 +145,15 @@ func (h *Handler) ListCommunities(ctx context.Context, i *ListCommunityInput) (*
 	}, nil
 }
 
-type GetCommunityInput struct {
+type GetInput struct {
 	Slug string `path:"slug"`
 }
 
-type GetCommunityOutput struct {
+type GetOutput struct {
 	Body Community
 }
 
-func (h *Handler) GetCommunity(ctx context.Context, i *GetCommunityInput) (*GetCommunityOutput, error) {
+func (h *Handler) Get(ctx context.Context, i *GetInput) (*GetOutput, error) {
 	var c entities.Community
 
 	err := h.DB.NewSelect().
@@ -194,20 +195,20 @@ func (h *Handler) GetCommunity(ctx context.Context, i *GetCommunityInput) (*GetC
 		}
 	}
 
-	return &GetCommunityOutput{
+	return &GetOutput{
 		Body: r,
 	}, nil
 }
 
-type JoinCommunityInput struct {
+type JoinInput struct {
 	Slug string `path:"slug"`
 }
 
-type JoinCommunityOutput struct {
-	Body JoinCommunity
+type JoinOutput struct {
+	Body Join
 }
 
-func (h *Handler) JoinCommunity(ctx context.Context, i *JoinCommunityInput) (*JoinCommunityOutput, error) {
+func (h *Handler) Join(ctx context.Context, i *JoinInput) (*JoinOutput, error) {
 	// 获取当前用户
 	s, ok := session.FromContext(ctx)
 	if !ok {
@@ -245,22 +246,22 @@ func (h *Handler) JoinCommunity(ctx context.Context, i *JoinCommunityInput) (*Jo
 		return nil, err
 	}
 
-	return &JoinCommunityOutput{
-		Body: JoinCommunity{
+	return &JoinOutput{
+		Body: Join{
 			Joined: true,
 		},
 	}, nil
 }
 
-type LeaveCommunityInput struct {
+type LeaveInput struct {
 	Slug string `path:"slug"`
 }
 
-type LeaveCommunityOutput struct {
-	Body JoinCommunity
+type LeaveOutput struct {
+	Body Join
 }
 
-func (h *Handler) LeaveCommunity(ctx context.Context, i *LeaveCommunityInput) (*LeaveCommunityOutput, error) {
+func (h *Handler) Leave(ctx context.Context, i *LeaveInput) (*LeaveOutput, error) {
 	// 获取当前用户
 	s, ok := session.FromContext(ctx)
 	if !ok {
@@ -298,23 +299,23 @@ func (h *Handler) LeaveCommunity(ctx context.Context, i *LeaveCommunityInput) (*
 		return nil, err
 	}
 
-	return &LeaveCommunityOutput{
-		Body: JoinCommunity{
+	return &LeaveOutput{
+		Body: Join{
 			Joined: false,
 		},
 	}, nil
 }
 
-type CreateCommunityPostInput struct {
+type CreatePostInput struct {
 	Slug string `path:"slug"`
-	Body CreateCommunityPost
+	Body CreatePost
 }
 
-type CreateCommunityPostOutput struct {
+type CreatePostOutput struct {
 	Body Post
 }
 
-func (h *Handler) CreateCommunityPost(ctx context.Context, i *CreateCommunityPostInput) (*CreateCommunityPostOutput, error) {
+func (h *Handler) CreatePost(ctx context.Context, i *CreatePostInput) (*CreatePostOutput, error) {
 	s, ok := session.FromContext(ctx)
 	if !ok {
 		return nil, huma.Error401Unauthorized("未认证")
@@ -357,8 +358,9 @@ func (h *Handler) CreateCommunityPost(ctx context.Context, i *CreateCommunityPos
 		return nil, err
 	}
 
-	return &CreateCommunityPostOutput{
+	return &CreatePostOutput{
 		Body: Post{
+			VoteCount:   post.VoteCount,
 			ID:          post.ID,
 			CommunityID: post.CommunityID,
 			AuthorID:    post.AuthorID,
@@ -370,16 +372,16 @@ func (h *Handler) CreateCommunityPost(ctx context.Context, i *CreateCommunityPos
 	}, nil
 }
 
-type ListCommunityPostsInput struct {
+type ListPostsInput struct {
 	Slug string `path:"slug"`
 	pagination.Params
 }
 
-type ListCommunityPostsOutput struct {
+type ListPostsOutput struct {
 	Body pagination.Result[Post]
 }
 
-func (h *Handler) ListCommunityPosts(ctx context.Context, i *ListCommunityPostsInput) (*ListCommunityPostsOutput, error) {
+func (h *Handler) ListPosts(ctx context.Context, i *ListPostsInput) (*ListPostsOutput, error) {
 	// 查询社区
 	var community entities.Community
 	err := h.DB.NewSelect().
@@ -397,6 +399,8 @@ func (h *Handler) ListCommunityPosts(ctx context.Context, i *ListCommunityPostsI
 	// 分页查询帖子
 	query := h.DB.NewSelect().
 		Model((*entities.CommunityPost)(nil)).
+		Column("cp.*").
+		ColumnExpr("(SELECT COALESCE(SUM(cpv.value), 0) FROM community_post_votes AS cpv WHERE cpv.post_id = cp.id) AS vote_count").
 		Where("cp.community_id = ?", community.ID).
 		OrderExpr("cp.created_at DESC, cp.id DESC")
 
@@ -410,6 +414,7 @@ func (h *Handler) ListCommunityPosts(ctx context.Context, i *ListCommunityPostsI
 
 	for _, post := range result.Items {
 		items = append(items, Post{
+			VoteCount:   post.VoteCount,
 			ID:          post.ID,
 			CommunityID: post.CommunityID,
 			AuthorID:    post.AuthorID,
@@ -420,7 +425,7 @@ func (h *Handler) ListCommunityPosts(ctx context.Context, i *ListCommunityPostsI
 		})
 	}
 
-	return &ListCommunityPostsOutput{
+	return &ListPostsOutput{
 		Body: pagination.Result[Post]{
 			Items: items,
 			Total: result.Total,
@@ -430,20 +435,22 @@ func (h *Handler) ListCommunityPosts(ctx context.Context, i *ListCommunityPostsI
 	}, nil
 }
 
-type GetCommunityPostInput struct {
+type GetPostInput struct {
 	Slug   string `path:"slug"`
 	PostID string `path:"postId" format:"uuid"`
 }
 
-type GetCommunityPostOutput struct {
+type GetPostOutput struct {
 	Body Post
 }
 
-func (h *Handler) GetCommunityPost(ctx context.Context, i *GetCommunityPostInput) (*GetCommunityPostOutput, error) {
+func (h *Handler) GetPost(ctx context.Context, i *GetPostInput) (*GetPostOutput, error) {
 	var post entities.CommunityPost
 
 	err := h.DB.NewSelect().
 		Model(&post).
+		Column("cp.*").
+		ColumnExpr("(SELECT COALESCE(SUM(cpv.value), 0) FROM community_post_votes AS cpv WHERE cpv.post_id = cp.id) AS vote_count").
 		Join("JOIN communities AS c ON c.id = cp.community_id").
 		Where("cp.id = ?", i.PostID).
 		Where("c.slug = ?", i.Slug).
@@ -456,8 +463,9 @@ func (h *Handler) GetCommunityPost(ctx context.Context, i *GetCommunityPostInput
 		return nil, err
 	}
 
-	return &GetCommunityPostOutput{
+	return &GetPostOutput{
 		Body: Post{
+			VoteCount:   post.VoteCount,
 			ID:          post.ID,
 			CommunityID: post.CommunityID,
 			AuthorID:    post.AuthorID,
@@ -467,4 +475,85 @@ func (h *Handler) GetCommunityPost(ctx context.Context, i *GetCommunityPostInput
 			UpdatedAt:   post.UpdatedAt,
 		},
 	}, nil
+}
+
+type PutPostVoteInput struct {
+	PostID uuid.UUID `path:"postId"`
+	Body   PutPostVote
+}
+
+func (h *Handler) PutPostVote(ctx context.Context, i *PutPostVoteInput) (*struct{}, error) {
+	sess, ok := session.FromContext(ctx)
+	if !ok {
+		return nil, huma.Error401Unauthorized("请先登录")
+	}
+
+	vote := &entities.CommunityPostVote{
+		PostID: i.PostID,
+		UserID: sess.UserID,
+		Value:  i.Body.Value,
+	}
+
+	if vote.Value == 0 {
+		_, err := h.DB.NewDelete().Model(vote).WherePK().Exec(ctx)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}
+
+	_, err := h.DB.NewInsert().
+		Model(vote).
+		On("CONFLICT (post_id, user_id) DO UPDATE").
+		Set("value = EXCLUDED.value").
+		Exec(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+type PutPostBookmarkInput struct {
+	PostID uuid.UUID `path:"postId"`
+	Body   PutPostBookmark
+}
+
+func (h *Handler) PutPostBookmark(ctx context.Context, i *PutPostBookmarkInput) (*struct{}, error) {
+	sess, ok := session.FromContext(ctx)
+	if !ok {
+		return nil, huma.Error401Unauthorized("请先登录")
+	}
+
+	bookmark := &entities.CommunityPostBookmark{
+		PostID: i.PostID,
+		UserID: sess.UserID,
+	}
+
+	if !i.Body.Bookmarked {
+		_, err := h.DB.NewDelete().
+			Model(bookmark).
+			WherePK().
+			Exec(ctx)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}
+
+	_, err := h.DB.NewInsert().
+		Model(bookmark).
+		On("CONFLICT (post_id, user_id) DO NOTHING").
+		Exec(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }

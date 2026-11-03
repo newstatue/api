@@ -1,0 +1,2 @@
+CREATE TABLE "community_post_bookmarks" ("post_id" uuid NOT NULL, "user_id" uuid NOT NULL, "created_at" TIMESTAMPTZ NOT NULL DEFAULT current_timestamp, PRIMARY KEY ("post_id", "user_id"));
+CREATE TABLE "community_post_votes" ("post_id" uuid NOT NULL, "user_id" uuid NOT NULL, "value" SMALLINT NOT NULL, "created_at" TIMESTAMPTZ NOT NULL DEFAULT current_timestamp, PRIMARY KEY ("post_id", "user_id"));

@@ -79,22 +79,25 @@ func main() {
 	huma.Post(api, "/api/auth/register", authHandler.RegisterUser)
 	huma.Post(api, "/api/auth/login", authHandler.LoginUser)
 
-	huma.Get(api, "/api/communities", communityHandler.ListCommunities)
-	huma.Get(api, "/api/communities/{slug}/posts", communityHandler.ListCommunityPosts)
-	huma.Get(api, "/api/communities/{slug}/posts/{postId}", communityHandler.GetCommunityPost)
+	huma.Get(api, "/api/communities", communityHandler.List)
+	huma.Get(api, "/api/communities/{slug}/posts", communityHandler.ListPosts)
+	huma.Get(api, "/api/communities/{slug}/posts/{postId}", communityHandler.GetPost)
 
 	// 可选认证接口
-	huma.Get(optional, "/api/communities/{slug}", communityHandler.GetCommunity)
+	huma.Get(optional, "/api/communities/{slug}", communityHandler.Get)
 
 	// 必须认证的接口
 	huma.Get(authenticated, "/api/auth/me", authHandler.GetCurrentUser)
 
-	huma.Post(authenticated, "/api/communities", communityHandler.CreateCommunity)
+	huma.Post(authenticated, "/api/communities", communityHandler.Create)
 
-	huma.Post(authenticated, "/api/communities/{slug}/members/me", communityHandler.JoinCommunity)
-	huma.Delete(authenticated, "/api/communities/{slug}/members/me", communityHandler.LeaveCommunity)
+	huma.Post(authenticated, "/api/communities/{slug}/members/me", communityHandler.Join)
+	huma.Delete(authenticated, "/api/communities/{slug}/members/me", communityHandler.Leave)
 
-	huma.Post(authenticated, "/api/communities/{slug}/posts", communityHandler.CreateCommunityPost)
+	huma.Post(authenticated, "/api/communities/{slug}/posts", communityHandler.CreatePost)
+
+	huma.Put(authenticated, "/api/communities/posts/{postId}/vote", communityHandler.PutPostVote)
+	huma.Put(authenticated, "/api/communities/posts/{postId}/bookmark", communityHandler.PutPostBookmark)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	server := &http.Server{

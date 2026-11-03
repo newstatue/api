@@ -15,6 +15,8 @@ func Migrate(ctx context.Context, db *bun.DB) error {
 		migrate.WithModel((*entities.Community)(nil)),
 		migrate.WithModel((*entities.CommunityMember)(nil)),
 		migrate.WithModel((*entities.CommunityPost)(nil)),
+		migrate.WithModel((*entities.CommunityPostVote)(nil)),
+		migrate.WithModel((*entities.CommunityPostBookmark)(nil)),
 		migrate.WithMigrationsDirectoryAuto("migrations"),
 	)
 	if err != nil {

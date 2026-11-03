@@ -8,6 +8,7 @@ import (
 )
 
 type CommunityPost struct {
+	VoteCount     int64 `bun:"vote_count,scanonly"`
 	bun.BaseModel `bun:"table:community_posts,alias:cp"`
 
 	ID          uuid.UUID `bun:"id,pk,type:uuid,default:uuidv7()"`

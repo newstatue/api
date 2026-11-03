@@ -18,23 +18,24 @@ type Community struct {
 	MemberRole string `json:"memberRole"`
 }
 
-type CreateCommunity struct {
+type Create struct {
 	Slug        string    `json:"slug" minLength:"3" maxLength:"32" pattern:"^[a-z0-9]+(-[a-z0-9]+)*$"`
 	Name        string    `json:"name" minLength:"1" maxLength:"100"`
 	Description string    `json:"description" maxLength:"1000"`
 	OwnerID     uuid.UUID `json:"ownerId"`
 }
 
-type UpdateCommunity struct {
+type Update struct {
 	Name        *string `json:"name,omitempty" minLength:"1" maxLength:"100"`
 	Description *string `json:"description,omitempty" maxLength:"1000"`
 }
 
-type JoinCommunity struct {
+type Join struct {
 	Joined bool `json:"joined"`
 }
 
 type Post struct {
+	VoteCount   int64     `json:"voteCount"`
 	ID          uuid.UUID `json:"id"`
 	CommunityID uuid.UUID `json:"communityId"`
 	AuthorID    uuid.UUID `json:"authorId"`
@@ -44,12 +45,20 @@ type Post struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
-type CreateCommunityPost struct {
+type CreatePost struct {
 	Title   string `json:"title" minLength:"1" maxLength:"200"`
 	Content string `json:"content" minLength:"1" maxLength:"50000"`
 }
 
-type UpdateCommunityPost struct {
+type UpdatePost struct {
 	Title   *string `json:"title,omitempty" minLength:"1" maxLength:"200"`
 	Content *string `json:"content,omitempty" minLength:"1"`
+}
+
+type PutPostVote struct {
+	Value int16 `json:"value" enum:"-1,0,1"`
+}
+
+type PutPostBookmark struct {
+	Bookmarked bool `json:"bookmarked"`
 }
