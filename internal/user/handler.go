@@ -12,6 +12,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/newstatue/api/internal/entities"
 	"github.com/newstatue/api/internal/image"
+	"github.com/newstatue/api/internal/middleware"
 	"github.com/newstatue/api/internal/session"
 	"github.com/uptrace/bun"
 	"gocloud.dev/blob"
@@ -54,7 +55,7 @@ func (h *Handler) PutAvatar(ctx context.Context, i *PutAvatarInput) (*struct{}, 
 		ContentType: "image/webp",
 	})
 	if err != nil {
-		slog.ErrorContext(ctx, "保存头像失败", "key", key, "error", err)
+		slog.ErrorContext(ctx, "保存头像失败", "request_id", middleware.GetRequestID(ctx), "key", key, "error", err)
 		return nil, huma.Error500InternalServerError("保存头像失败")
 	}
 
@@ -66,10 +67,10 @@ func (h *Handler) PutAvatar(ctx context.Context, i *PutAvatarInput) (*struct{}, 
 		defer cancel()
 
 		if err := h.Bucket.Delete(cleanupCtx, key); err != nil {
-			slog.ErrorContext(cleanupCtx, "清理头像失败", "key", key, "error", err)
+			slog.ErrorContext(cleanupCtx, "清理头像失败", "request_id", middleware.GetRequestID(cleanupCtx), "key", key, "error", err)
 		}
 
-		slog.ErrorContext(ctx, "更新头像失败", "error", err)
+		slog.ErrorContext(ctx, "更新头像失败", "request_id", middleware.GetRequestID(ctx), "error", err)
 		return nil, huma.Error500InternalServerError("更新头像失败")
 	}
 

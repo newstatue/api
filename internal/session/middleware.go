@@ -18,7 +18,7 @@ func FromContext(ctx context.Context) (*Session, bool) {
 	return session, ok && session != nil
 }
 
-// Middleware 解析并注入 Session, required 为 true 时要求登录，为 false 时允许匿名访问。
+// Middleware 解析并注入 Session, required 为 true 时要求登录，为 false 时允许匿名访问
 func (m *Manager) Middleware(api huma.API, secure bool, required bool) func(huma.Context, func(huma.Context)) {
 	return func(ctx huma.Context, next func(huma.Context)) {
 		cookie, err := huma.ReadCookie(ctx, CookieName)

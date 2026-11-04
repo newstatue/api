@@ -16,6 +16,7 @@ import (
 	"github.com/newstatue/api/internal/community"
 	"github.com/newstatue/api/internal/config"
 	"github.com/newstatue/api/internal/database"
+	"github.com/newstatue/api/internal/middleware"
 	"github.com/newstatue/api/internal/session"
 	"github.com/newstatue/api/internal/storage"
 	"github.com/newstatue/api/internal/user"
@@ -202,7 +203,7 @@ func main() {
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	server := &http.Server{
 		Addr:    addr,
-		Handler: mux,
+		Handler: middleware.RequestID(mux),
 	}
 	slog.Info("服务器运行中", "addr", server.Addr)
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
