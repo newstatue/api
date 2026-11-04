@@ -27,9 +27,16 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: 安装图片处理编译依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libvips-dev
+          pkg-config --atleast-version=8.14 vips
+          pkg-config --modversion vips
+
       - name: 编译 Linux 二进制
         env:
-          CGO_ENABLED: "0"
+          CGO_ENABLED: "1"
           GOOS: linux
           GOARCH: amd64
         run: |
