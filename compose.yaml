@@ -13,7 +13,11 @@ services:
 
   seaweedfs:
     image: chrislusf/seaweedfs:4.51
-    command: server -s3 -dir=/data
+    command: mini -dir=/data
+    environment:
+      AWS_ACCESS_KEY_ID: dev
+      AWS_SECRET_ACCESS_KEY: dev
+      S3_BUCKET: my-bucket
     ports:
       - "8333:8333"
       - "9333:9333"

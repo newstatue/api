@@ -1,0 +1,11 @@
+CREATE TABLE "community_post_bookmarks" ("post_id" uuid NOT NULL, "user_id" uuid NOT NULL, "created_at" TIMESTAMPTZ NOT NULL DEFAULT current_timestamp, PRIMARY KEY ("post_id", "user_id"));
+CREATE TABLE "community_members" ("community_id" uuid NOT NULL, "user_id" uuid NOT NULL, "role" VARCHAR NOT NULL DEFAULT 'member', "created_at" TIMESTAMPTZ NOT NULL DEFAULT current_timestamp, PRIMARY KEY ("community_id", "user_id"));
+CREATE TABLE "communities" ("id" uuid NOT NULL DEFAULT uuidv7(), "slug" VARCHAR NOT NULL, "name" VARCHAR NOT NULL, "description" VARCHAR NOT NULL DEFAULT '', "owner_id" uuid NOT NULL, "created_at" TIMESTAMPTZ NOT NULL DEFAULT current_timestamp, "updated_at" TIMESTAMPTZ NOT NULL DEFAULT current_timestamp, PRIMARY KEY ("id"), UNIQUE ("slug"));
+ALTER TABLE "public"."community_members" ADD CONSTRAINT "community_members_community_id_fkey" FOREIGN KEY (community_id) REFERENCES "public"."communities" (id);
+ALTER TABLE "public"."users" ADD COLUMN "role" varchar DEFAULT user ;
+ALTER TABLE "public"."community_members" ADD CONSTRAINT "community_members_user_id_fkey" FOREIGN KEY (user_id) REFERENCES "public"."users" (id);
+ALTER TABLE "public"."communities" ADD CONSTRAINT "communities_owner_id_fkey" FOREIGN KEY (owner_id) REFERENCES "public"."users" (id);
+CREATE TABLE "community_posts" ("id" uuid NOT NULL DEFAULT uuidv7(), "community_id" uuid NOT NULL, "author_id" uuid NOT NULL, "title" VARCHAR NOT NULL, "content" text NOT NULL, "created_at" TIMESTAMPTZ NOT NULL DEFAULT current_timestamp, "updated_at" TIMESTAMPTZ NOT NULL DEFAULT current_timestamp, PRIMARY KEY ("id"));
+ALTER TABLE "public"."community_posts" ADD CONSTRAINT "community_posts_author_id_fkey" FOREIGN KEY (author_id) REFERENCES "public"."users" (id);
+CREATE TABLE "community_post_votes" ("post_id" uuid NOT NULL, "user_id" uuid NOT NULL, "value" SMALLINT NOT NULL, "created_at" TIMESTAMPTZ NOT NULL DEFAULT current_timestamp, PRIMARY KEY ("post_id", "user_id"));
+ALTER TABLE "public"."community_posts" ADD CONSTRAINT "community_posts_community_id_fkey" FOREIGN KEY (community_id) REFERENCES "public"."communities" (id);

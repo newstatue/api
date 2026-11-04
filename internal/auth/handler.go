@@ -50,7 +50,6 @@ func (h *Handler) RegisterUser(ctx context.Context, i *RegisterUserInput) (*Regi
 		Name:     i.Body.Name,
 		Email:    email,
 		Password: &password,
-		Image:    i.Body.Image,
 	}
 
 	_, err = h.DB.NewInsert().Model(user).Returning("id").Exec(ctx)
@@ -66,7 +65,6 @@ func (h *Handler) RegisterUser(ctx context.Context, i *RegisterUserInput) (*Regi
 			Name:          user.Name,
 			Email:         user.Email,
 			EmailVerified: user.EmailVerified,
-			Image:         user.Image,
 		},
 	}, nil
 }

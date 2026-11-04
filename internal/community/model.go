@@ -30,10 +30,6 @@ type Update struct {
 	Description *string `json:"description,omitempty" maxLength:"1000"`
 }
 
-type Join struct {
-	Joined bool `json:"joined"`
-}
-
 type Post struct {
 	VoteCount   int64     `json:"voteCount"`
 	ID          uuid.UUID `json:"id"`

@@ -1,0 +1,11 @@
+ALTER TABLE "public"."community_posts" DROP CONSTRAINT "";
+ALTER TABLE "public"."communities" DROP CONSTRAINT "";
+ALTER TABLE "public"."community_members" DROP CONSTRAINT "";
+DROP TABLE "public"."communities";
+ALTER TABLE "public"."community_members" DROP CONSTRAINT "";
+DROP TABLE "public"."community_post_votes";
+DROP TABLE "public"."community_members";
+ALTER TABLE "public"."community_posts" DROP CONSTRAINT "";
+DROP TABLE "public"."community_posts";
+DROP TABLE "public"."users";
+DROP TABLE "public"."community_post_bookmarks";

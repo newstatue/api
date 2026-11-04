@@ -10,6 +10,7 @@ import (
 type Config struct {
 	PostgresURL   string        `env:"POSTGRES_URL,required,notEmpty"`
 	ValkeyURL     string        `env:"VALKEY_URL,required,notEmpty"`
+	SeaweedFSURL  string        `env:"SEAWEEDFS_URL,required,notEmpty"`
 	Port          int           `env:"PORT" envDefault:"8080"`
 	Environment   string        `env:"ENV" envDefault:"prod"`
 	SessionSecure bool          `env:"SESSION_SECURE" envDefault:"true"`

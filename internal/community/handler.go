@@ -200,29 +200,24 @@ func (h *Handler) Get(ctx context.Context, i *GetInput) (*GetOutput, error) {
 	}, nil
 }
 
-type JoinInput struct {
+type PutMembershipInput struct {
 	Slug string `path:"slug"`
+	Body struct {
+		Joined bool `json:"joined"`
+	}
 }
 
-type JoinOutput struct {
-	Body Join
-}
-
-func (h *Handler) Join(ctx context.Context, i *JoinInput) (*JoinOutput, error) {
-	// 获取当前用户
+func (h *Handler) PutMembership(ctx context.Context, i *PutMembershipInput) (*struct{}, error) {
 	s, ok := session.FromContext(ctx)
 	if !ok {
 		return nil, huma.Error401Unauthorized("未认证")
 	}
 
-	// 根据 Slug 查询社区
 	var c entities.Community
-
 	err := h.DB.NewSelect().
 		Model(&c).
 		Where("c.slug = ?", i.Slug).
 		Scan(ctx)
-
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, huma.Error404NotFound("社区不存在")
 	}
@@ -230,80 +225,31 @@ func (h *Handler) Join(ctx context.Context, i *JoinInput) (*JoinOutput, error) {
 		return nil, err
 	}
 
-	// 创建成员关系
-	member := &entities.CommunityMember{
-		CommunityID: c.ID,
-		UserID:      s.UserID,
-		Role:        entities.CommunityRoleMember,
-	}
-
-	_, err = h.DB.NewInsert().
-		Model(member).
-		On("CONFLICT (community_id, user_id) DO NOTHING").
-		Exec(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &JoinOutput{
-		Body: Join{
-			Joined: true,
-		},
-	}, nil
-}
-
-type LeaveInput struct {
-	Slug string `path:"slug"`
-}
-
-type LeaveOutput struct {
-	Body Join
-}
-
-func (h *Handler) Leave(ctx context.Context, i *LeaveInput) (*LeaveOutput, error) {
-	// 获取当前用户
-	s, ok := session.FromContext(ctx)
-	if !ok {
-		return nil, huma.Error401Unauthorized("未认证")
-	}
-
-	// 根据 Slug 查询社区
-	var c entities.Community
-
-	err := h.DB.NewSelect().
-		Model(&c).
-		Where("c.slug = ?", i.Slug).
-		Scan(ctx)
-
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, huma.Error404NotFound("社区不存在")
+	if i.Body.Joined {
+		member := &entities.CommunityMember{
+			CommunityID: c.ID,
+			UserID:      s.UserID,
+			Role:        entities.CommunityRoleMember,
+		}
+		_, err = h.DB.NewInsert().
+			Model(member).
+			On("CONFLICT (community_id, user_id) DO NOTHING").
+			Exec(ctx)
+	} else {
+		if c.OwnerID == s.UserID {
+			return nil, huma.Error403Forbidden("社区所有者不能退出社区")
+		}
+		_, err = h.DB.NewDelete().
+			Model((*entities.CommunityMember)(nil)).
+			Where("cm.community_id = ?", c.ID).
+			Where("cm.user_id = ?", s.UserID).
+			Exec(ctx)
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	// 社区所有者不能退出
-	if c.OwnerID == s.UserID {
-		return nil, huma.Error403Forbidden("社区所有者不能退出社区")
-	}
-
-	// 删除成员关系
-	_, err = h.DB.NewDelete().
-		Model((*entities.CommunityMember)(nil)).
-		Where("cm.community_id = ?", c.ID).
-		Where("cm.user_id = ?", s.UserID).
-		Exec(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &LeaveOutput{
-		Body: Join{
-			Joined: false,
-		},
-	}, nil
+	return nil, nil
 }
 
 type CreatePostInput struct {

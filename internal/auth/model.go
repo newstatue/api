@@ -11,10 +11,9 @@ type User struct {
 }
 
 type RegisterUser struct {
-	Name     string  `json:"name" required:"true" minLength:"2" maxLength:"50"`
-	Email    string  `json:"email" required:"true" format:"email"`
-	Image    *string `json:"image,omitempty" format:"uri"`
-	Password string  `json:"password" required:"true" minLength:"8" maxLength:"128"`
+	Name     string `json:"name" required:"true" minLength:"2" maxLength:"50"`
+	Email    string `json:"email" required:"true" format:"email"`
+	Password string `json:"password" required:"true" minLength:"8" maxLength:"128"`
 }
 
 type LoginUser struct {
