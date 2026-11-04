@@ -12,7 +12,7 @@ func TestNewBucket(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "dev")
 	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
 
-	bucket, err := NewBucket(ctx, "s3://my-bucket?endpoint=http%3A%2F%2Flocalhost%3A8333&region=us-east-1&use_path_style=true")
+	bucket, err := NewBucket(ctx, "s3://my-bucket?endpoint=http%3A%2F%2Flocalhost%3A8333&region=us-east-1&use_path_style=true", "http://localhost:8333")
 	if err != nil {
 		t.Fatal(err)
 	}

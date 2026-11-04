@@ -9,11 +9,13 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/newstatue/api/internal/entities"
 	"github.com/newstatue/api/internal/session"
+	"github.com/newstatue/api/internal/storage"
 	"github.com/newstatue/api/internal/util"
 	"github.com/uptrace/bun"
 )
 
 type Handler struct {
+	Bucket  *storage.Bucket
 	DB      *bun.DB
 	Session *session.Manager
 }
@@ -109,6 +111,8 @@ func (h *Handler) LoginUser(ctx context.Context, i *LoginUserInput) (*LoginUserO
 		return nil, huma.Error401Unauthorized("邮箱或密码错误")
 	}
 
+	imageURL := h.Bucket.GetURL(user.Image)
+
 	// 3. 验证成功，创建session
 	sessionID, err := h.Session.Create(ctx, session.Session{
 		UserID:    user.ID,
@@ -128,7 +132,7 @@ func (h *Handler) LoginUser(ctx context.Context, i *LoginUserInput) (*LoginUserO
 			Name:          user.Name,
 			Email:         user.Email,
 			EmailVerified: user.EmailVerified,
-			Image:         user.Image,
+			Image:         imageURL,
 		},
 	}, nil
 }
@@ -157,6 +161,8 @@ func (h *Handler) GetCurrentUser(ctx context.Context, _ *struct{}) (*GetCurrentU
 		return nil, huma.Error500InternalServerError("数据库查询失败")
 	}
 
+	imageURL := h.Bucket.GetURL(user.Image)
+
 	// 3. 返回用户信息
 	return &GetCurrentUserOutput{
 		Body: User{
@@ -164,7 +170,7 @@ func (h *Handler) GetCurrentUser(ctx context.Context, _ *struct{}) (*GetCurrentU
 			Name:          user.Name,
 			Email:         user.Email,
 			EmailVerified: user.EmailVerified,
-			Image:         user.Image,
+			Image:         imageURL,
 		},
 	}, nil
 }

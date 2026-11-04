@@ -55,7 +55,7 @@ func main() {
 	defer valkey.Close()
 	slog.Info("Valkey 连接成功")
 
-	bucket, err := storage.NewBucket(ctx, cfg.SeaweedFSURL)
+	bucket, err := storage.NewBucket(ctx, cfg.SeaweedFSURL, cfg.SeaweedFSPublicEndpoint)
 	if err != nil {
 		slog.Error("SeaweedFS Bucket 连接失败", "error", err)
 		os.Exit(1)
@@ -92,7 +92,7 @@ func main() {
 	optional.UseMiddleware(sessionManager.Middleware(api, cfg.SessionSecure, false))
 
 	// Handlers
-	authHandler := auth.Handler{DB: postgres, Session: sessionManager}
+	authHandler := auth.Handler{DB: postgres, Session: sessionManager, Bucket: bucket}
 	communityHandler := community.Handler{DB: postgres, Session: sessionManager}
 	userHandler := user.Handler{DB: postgres, Session: sessionManager, Bucket: bucket}
 

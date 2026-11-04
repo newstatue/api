@@ -14,6 +14,7 @@ import (
 	"github.com/newstatue/api/internal/image"
 	"github.com/newstatue/api/internal/middleware"
 	"github.com/newstatue/api/internal/session"
+	"github.com/newstatue/api/internal/storage"
 	"github.com/uptrace/bun"
 	"gocloud.dev/blob"
 )
@@ -21,7 +22,7 @@ import (
 type Handler struct {
 	DB      *bun.DB
 	Session *session.Manager
-	Bucket  *blob.Bucket
+	Bucket  *storage.Bucket
 }
 
 type PutAvatarInput struct {
