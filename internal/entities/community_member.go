@@ -10,6 +10,7 @@ import (
 type CommunityRole string
 
 const (
+	CommunityRoleOwner     CommunityRole = "owner"
 	CommunityRoleModerator CommunityRole = "moderator"
 	CommunityRoleMember    CommunityRole = "member"
 )

@@ -77,7 +77,7 @@ func (h *Handler) Create(ctx context.Context, i *CreateInput) (*CreateOutput, er
 		member := &entities.CommunityMember{
 			CommunityID: c.ID,
 			UserID:      c.OwnerID,
-			Role:        entities.CommunityRoleMember,
+			Role:        entities.CommunityRoleOwner,
 		}
 
 		_, err = tx.NewInsert().Model(member).Exec(ctx)
