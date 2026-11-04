@@ -54,6 +54,7 @@ func (h *Handler) PutAvatar(ctx context.Context, i *PutAvatarInput) (*struct{}, 
 		ContentType: "image/webp",
 	})
 	if err != nil {
+		slog.ErrorContext(ctx, "保存头像失败", "key", key, "error", err)
 		return nil, huma.Error500InternalServerError("保存头像失败")
 	}
 
