@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: 检出代码
@@ -64,6 +64,9 @@ jobs:
           rsync -avzP \
             -e "ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=yes" \
             api "$USER@$HOST:/srv/evorsio/api/api.new"
+          rsync -avzP \
+            -e "ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=yes" \
+            Containerfile "$USER@$HOST:/srv/evorsio/api/Containerfile"
 
       - name: 部署并重启
         env:
