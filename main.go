@@ -24,6 +24,7 @@ import (
 )
 
 func main() {
+	// 读取配置
 	cfg, err := config.Load()
 	if err != nil {
 		slog.Error("加载配置失败", "error", err)
@@ -31,7 +32,8 @@ func main() {
 	}
 	slog.Info("加载配置成功")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// 启动基础设施
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	postgres, err := database.NewPostgres(ctx, cfg.PostgresURL)
@@ -72,20 +74,24 @@ func main() {
 	defer vips.Shutdown()
 	slog.Info("Vips 连接成功")
 
+	// 创建路由
 	mux := http.NewServeMux()
-
 	humaConfig := huma.DefaultConfig("Evorsio API", "1.0.0")
-
 	humaConfig.DocsPath = "/api/docs"
 	humaConfig.OpenAPIPath = "/api/openapi"
 	humaConfig.SchemasPath = "/api/schemas"
-	api := humago.New(mux, humaConfig)
 
+	// 基础服务
 	sessionManager := &session.Manager{
 		Valkey: valkey,
 		Secure: cfg.SessionSecure,
 		TTL:    cfg.SessionTTL,
 	}
+
+	// 注册路由及中间件
+	api := humago.New(mux, humaConfig)
+	limiter := rate.NewLimiter(20, 40)
+	api.UseMiddleware(middleware.RateLimit(api, limiter))
 
 	authenticated := huma.NewGroup(api)
 	authenticated.UseMiddleware(sessionManager.Middleware(api, cfg.SessionSecure, true))
@@ -202,12 +208,10 @@ func main() {
 		DefaultStatus: http.StatusNoContent,
 	}, userHandler.PutAvatar)
 
-	limiter := rate.NewLimiter(20, 40)
-
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	server := &http.Server{
 		Addr:    addr,
-		Handler: middleware.RequestID(middleware.RateLimit(limiter, mux)),
+		Handler: middleware.RequestID(mux),
 	}
 	slog.Info("服务器运行中", "addr", server.Addr)
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
