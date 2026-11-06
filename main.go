@@ -20,6 +20,7 @@ import (
 	"github.com/newstatue/api/internal/session"
 	"github.com/newstatue/api/internal/storage"
 	"github.com/newstatue/api/internal/user"
+	"golang.org/x/time/rate"
 )
 
 func main() {
@@ -201,10 +202,12 @@ func main() {
 		DefaultStatus: http.StatusNoContent,
 	}, userHandler.PutAvatar)
 
+	limiter := rate.NewLimiter(20, 40)
+
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	server := &http.Server{
 		Addr:    addr,
-		Handler: middleware.RequestID(mux),
+		Handler: middleware.RequestID(middleware.RateLimit(limiter, mux)),
 	}
 	slog.Info("服务器运行中", "addr", server.Addr)
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
