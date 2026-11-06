@@ -202,9 +202,7 @@ func (h *Handler) Get(ctx context.Context, i *GetInput) (*GetOutput, error) {
 
 type PutMembershipInput struct {
 	Slug string `path:"slug"`
-	Body struct {
-		Joined bool `json:"joined"`
-	}
+	Body PutMembership
 }
 
 func (h *Handler) PutMembership(ctx context.Context, i *PutMembershipInput) (*struct{}, error) {

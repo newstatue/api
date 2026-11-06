@@ -74,6 +74,18 @@ func main() {
 	mux := http.NewServeMux()
 
 	humaConfig := huma.DefaultConfig("Evorsio API", "1.0.0")
+	humaConfig.DocsRenderer = huma.DocsRendererScalar
+	humaConfig.DocsRendererConfig = map[string]any{
+		"hideClientButton":     true,    // 隐藏独立 API Client 入口
+		"hideModels":           true,    // 隐藏独立的 Models 区域
+		"hideDarkModeToggle":   true,    // 隐藏深浅色切换
+		"documentDownloadType": "none",  // 隐藏 OpenAPI 下载按钮
+		"showDeveloperTools":   "never", // 隐藏开发工具栏和 SDK 生成入口
+		"agent": map[string]any{ // 隐藏 Ask AI 功能
+			"disabled": true,
+		},
+	}
+
 	humaConfig.DocsPath = "/api/docs"
 	humaConfig.OpenAPIPath = "/api/openapi"
 	humaConfig.SchemasPath = "/api/schemas"

@@ -31,7 +31,6 @@ type Update struct {
 }
 
 type Post struct {
-	VoteCount   int64     `json:"voteCount"`
 	ID          uuid.UUID `json:"id"`
 	CommunityID uuid.UUID `json:"communityId"`
 	AuthorID    uuid.UUID `json:"authorId"`
@@ -39,6 +38,7 @@ type Post struct {
 	Content     string    `json:"content"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+	VoteCount   int64     `json:"voteCount"`
 }
 
 type CreatePost struct {
@@ -49,6 +49,10 @@ type CreatePost struct {
 type UpdatePost struct {
 	Title   *string `json:"title,omitempty" minLength:"1" maxLength:"200"`
 	Content *string `json:"content,omitempty" minLength:"1"`
+}
+
+type PutMembership struct {
+	Joined bool `json:"joined"`
 }
 
 type PutPostVote struct {
